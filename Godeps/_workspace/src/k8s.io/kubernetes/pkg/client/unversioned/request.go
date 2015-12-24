@@ -28,6 +28,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"net/http/httputil"
 
 	"github.com/golang/glog"
 	"k8s.io/kubernetes/pkg/api/errors"
@@ -613,6 +614,11 @@ func (r *Request) Watch() (watch.Interface, error) {
 	}
 	url := r.URL().String()
 	req, err := http.NewRequest(r.verb, url, r.body)
+	dump, _ := httputil.DumpRequestOut(req, true)
+	fmt.Println("WATCHING--------------------------------------")
+	fmt.Printf("URL = %s\n", url)
+	fmt.Printf("\n%s\n", dump)
+	fmt.Println("WATCHING======================================")
 	if err != nil {
 		return nil, err
 	}
@@ -648,6 +654,11 @@ func (r *Request) Stream() (io.ReadCloser, error) {
 	}
 	url := r.URL().String()
 	req, err := http.NewRequest(r.verb, url, nil)
+	dump, _ := httputil.DumpRequestOut(req, true)
+	fmt.Println("STREAM--------------------------------------")
+	fmt.Printf("URL = %s\n", url)
+	fmt.Printf("\n%s\n", dump)
+	fmt.Println("STREAM======================================")
 	if err != nil {
 		return nil, err
 	}
@@ -692,6 +703,7 @@ func (r *Request) Stream() (io.ReadCloser, error) {
 // fn at most once. It will return an error if a problem occurred prior to connecting to the
 // server - the provided function is responsible for handling server errors.
 func (r *Request) request(fn func(*http.Request, *http.Response)) error {
+
 	if r.err != nil {
 		return r.err
 	}
@@ -716,10 +728,18 @@ func (r *Request) request(fn func(*http.Request, *http.Response)) error {
 	for {
 		url := r.URL().String()
 		req, err := http.NewRequest(r.verb, url, r.body)
+		dump, _ := httputil.DumpRequestOut(req, true)
+
 		if err != nil {
 			return err
 		}
 		req.Header = r.headers
+
+		fmt.Println("--------------------------------------")
+
+		fmt.Println(r.headers)
+		fmt.Printf("\n%s\n", dump)
+		fmt.Println("======================================")
 
 		resp, err := client.Do(req)
 		if err != nil {
@@ -761,6 +781,9 @@ func (r *Request) Do() Result {
 	}()
 	var result Result
 	err := r.request(func(req *http.Request, resp *http.Response) {
+		// dump, _ := httputil.DumpRequestOut(req, true)
+		// fmt.Printf("%s\n\n", dump)
+		// fmt.Println("======================================")
 		result = r.transformResponse(resp, req)
 	})
 	if err != nil {
@@ -777,7 +800,10 @@ func (r *Request) DoRaw() ([]byte, error) {
 	}()
 	var result Result
 	err := r.request(func(req *http.Request, resp *http.Response) {
-		result.body, result.err = ioutil.ReadAll(resp.Body)
+		// dump, _ := httputil.DumpRequestOut(req, true)
+		// fmt.Printf("%s\n\n", dump)
+		// fmt.Println("======================================")
+		// result.body, result.err = ioutil.ReadAll(resp.Body)
 	})
 	if err != nil {
 		return nil, err
